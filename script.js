@@ -4,9 +4,169 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   initPromoCountdown();
+  initEstimator();
   initQuoteForm();
   initGallery();
 });
+
+/* --------------------------------------------------------------------
+   Instant estimate calculator
+   --------------------------------------------------------------------
+   Pricing tiers based on typical mobile detailing market ranges.
+   TO ADJUST PRICING: edit the numbers in PACKAGE_PRICING / VEHICLE_MULTIPLIER
+   / CONDITION_MULTIPLIER below — nothing else needs to change.
+   -------------------------------------------------------------------- */
+
+// Base price range + base time range (hours) per package, for a midsize vehicle in moderate condition
+const PACKAGE_PRICING = {
+  basic:    { label: 'Basic Wash / Exterior Detail',     low: 40,  high: 80,  timeLow: 1,   timeHigh: 1.5 },
+  interior: { label: 'Interior Detail',                  low: 75,  high: 150, timeLow: 1.5, timeHigh: 2.5 },
+  full:     { label: 'Full Detail (Interior & Exterior)', low: 150, high: 300, timeLow: 2.5, timeHigh: 3.5 },
+  premium:  { label: 'Premium / Showroom Detail',        low: 250, high: 500, timeLow: 3.5, timeHigh: 5.5 },
+};
+
+const VEHICLE_LABELS = {
+  sedan: 'Sedan / Coupe',
+  midsize: 'Midsize Car / Small SUV',
+  large: 'Large SUV / Truck / Van',
+};
+
+// Multiplier applied to the base package price/time
+const VEHICLE_MULTIPLIER = { sedan: 0.9, midsize: 1.0, large: 1.25 };
+
+const CONDITION_LABELS = {
+  light: 'Light — regular upkeep',
+  moderate: 'Moderate — normal daily use',
+  heavy: 'Heavy — stains, pet hair, heavy soil',
+};
+
+const CONDITION_MULTIPLIER = { light: 0.9, moderate: 1.0, heavy: 1.25 };
+
+function calculateEstimate() {
+  const packageKey = document.getElementById('estPackage').value;
+  const vehicleKey = document.getElementById('estVehicle').value;
+  const conditionKey = document.getElementById('estCondition').value;
+  const addonInputs = Array.from(document.querySelectorAll('.estimator-addons input[type="checkbox"]:checked'));
+
+  const pkg = PACKAGE_PRICING[packageKey];
+  const vehicleMult = VEHICLE_MULTIPLIER[vehicleKey];
+  const conditionMult = CONDITION_MULTIPLIER[conditionKey];
+
+  let low = pkg.low * vehicleMult * conditionMult;
+  let high = pkg.high * vehicleMult * conditionMult;
+  let timeLow = pkg.timeLow * vehicleMult * conditionMult;
+  let timeHigh = pkg.timeHigh * vehicleMult * conditionMult;
+
+  const addonNames = [];
+  addonInputs.forEach((input) => {
+    const addonPrice = parseFloat(input.dataset.price) || 0;
+    const addonTime = parseFloat(input.dataset.time) || 0;
+    low += addonPrice * 0.8;
+    high += addonPrice * 1.2;
+    timeLow += addonTime;
+    timeHigh += addonTime;
+    addonNames.push(input.parentElement.textContent.trim().split('+')[0].trim());
+  });
+
+  return {
+    packageLabel: pkg.label,
+    vehicleLabel: VEHICLE_LABELS[vehicleKey],
+    conditionLabel: CONDITION_LABELS[conditionKey],
+    addonNames,
+    priceLow: Math.round(low / 5) * 5,
+    priceHigh: Math.round(high / 5) * 5,
+    timeLow: Math.round(timeLow * 2) / 2,
+    timeHigh: Math.round(timeHigh * 2) / 2,
+  };
+}
+
+function formatEstimate(est) {
+  const priceRange = `$${est.priceLow} – $${est.priceHigh}`;
+  const timeRange = `${est.timeLow} – ${est.timeHigh} hrs`;
+  return { priceRange, timeRange };
+}
+
+function initEstimator() {
+  const estimatorEl = document.getElementById('estimator');
+  if (!estimatorEl) return;
+
+  const priceEl = document.getElementById('estPriceRange');
+  const timeEl = document.getElementById('estTimeRange');
+  const packageSelect = document.getElementById('estPackage');
+  const vehicleSelect = document.getElementById('estVehicle');
+  const conditionSelect = document.getElementById('estCondition');
+  const addonChecks = document.querySelectorAll('.estimator-addons input[type="checkbox"]');
+
+  function refresh() {
+    const est = calculateEstimate();
+    const { priceRange, timeRange } = formatEstimate(est);
+    priceEl.textContent = priceRange;
+    timeEl.textContent = timeRange;
+    return est;
+  }
+
+  [packageSelect, vehicleSelect, conditionSelect].forEach((el) => el.addEventListener('change', refresh));
+  addonChecks.forEach((el) => el.addEventListener('change', refresh));
+
+  refresh();
+
+  // "Book Now" — carries the estimate into the form, marks it a booking request,
+  // then scrolls down and opens the Google Calendar booking page.
+  const bookBtn = document.getElementById('estBookNowBtn');
+  if (bookBtn) {
+    bookBtn.addEventListener('click', () => {
+      const est = refresh();
+      applyEstimateToForm(est, 'Book Now');
+      document.getElementById('quoteFormHeading').textContent = 'Confirm your details to book';
+      document.getElementById('submitBtnLabel').textContent = 'Send Booking Request';
+      document.getElementById('quote').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const nameInput = document.querySelector('#quoteForm input[name="name"]');
+      if (nameInput) setTimeout(() => nameInput.focus(), 400);
+    });
+  }
+
+  // "Email Me This Estimate" — carries the estimate into the form as a plain request, no booking framing.
+  const emailBtn = document.getElementById('estEmailBtn');
+  if (emailBtn) {
+    emailBtn.addEventListener('click', () => {
+      const est = refresh();
+      applyEstimateToForm(est, 'Email Estimate');
+      document.getElementById('quoteFormHeading').textContent = 'Where should we send it?';
+      document.getElementById('submitBtnLabel').textContent = 'Email Me This Estimate';
+      document.getElementById('quote').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const nameInput = document.querySelector('#quoteForm input[name="name"]');
+      if (nameInput) setTimeout(() => nameInput.focus(), 400);
+    });
+  }
+}
+
+function applyEstimateToForm(est, requestType) {
+  const { priceRange, timeRange } = formatEstimate(est);
+  const details = `Package: ${est.packageLabel} | Vehicle size: ${est.vehicleLabel} | Condition: ${est.conditionLabel}` +
+    (est.addonNames.length ? ` | Add-ons: ${est.addonNames.join(', ')}` : '');
+
+  document.getElementById('hiddenEstPrice').value = priceRange;
+  document.getElementById('hiddenEstTime').value = timeRange;
+  document.getElementById('hiddenEstDetails').value = details;
+  document.getElementById('hiddenRequestType').value = requestType;
+  document.getElementById('formSubject').value =
+    requestType === 'Book Now'
+      ? `Booking request (est. ${priceRange}) — Warren's Elite Detailing`
+      : `Estimate request (est. ${priceRange}) — Warren's Elite Detailing`;
+
+  // Show a summary banner above the form so the customer sees what they're submitting
+  let summaryEl = document.getElementById('estSummaryBanner');
+  if (!summaryEl) {
+    summaryEl = document.createElement('div');
+    summaryEl.id = 'estSummaryBanner';
+    summaryEl.className = 'estimator-summary-banner';
+    document.getElementById('quoteForm').prepend(summaryEl);
+  }
+  summaryEl.innerHTML = `
+    <strong>Your estimate:</strong> ${priceRange} · ${timeRange}
+    <span>${est.packageLabel} — ${est.vehicleLabel}, ${est.conditionLabel}</span>
+  `;
+}
 
 /* --------------------------------------------------------------------
    Gallery: completed job photos
