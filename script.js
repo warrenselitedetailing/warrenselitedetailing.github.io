@@ -5,7 +5,39 @@
 document.addEventListener('DOMContentLoaded', () => {
   initPromoCountdown();
   initQuoteForm();
+  initGallery();
 });
+
+/* --------------------------------------------------------------------
+   Gallery: completed job photos
+   --------------------------------------------------------------------
+   TO ADD A NEW PHOTO:
+     1. Drop the image file into the "assets/gallery/" folder.
+     2. Add one line below with its filename and a short caption.
+     3. Save — that's it, no HTML or CSS editing needed.
+
+   The newest entry at the TOP of the list shows first on the site.
+   -------------------------------------------------------------------- */
+const GALLERY_PHOTOS = [
+  // { src: 'assets/gallery/job-01-after.jpg', caption: 'Full interior & exterior detail — Kinston, NC' },
+];
+
+function initGallery() {
+  const grid = document.getElementById('galleryGrid');
+  if (!grid) return;
+
+  if (GALLERY_PHOTOS.length === 0) {
+    grid.innerHTML = '<div class="gallery-empty">Photos from our first completed details are coming soon — check back shortly.</div>';
+    return;
+  }
+
+  grid.innerHTML = GALLERY_PHOTOS.map((photo) => `
+    <div class="gallery-item">
+      <img src="${photo.src}" alt="${photo.caption ? photo.caption.replace(/"/g, '&quot;') : 'Completed detailing job'}" loading="lazy">
+      ${photo.caption ? `<div class="gallery-caption">${photo.caption}</div>` : ''}
+    </div>
+  `).join('');
+}
 
 /* --------------------------------------------------------------------
    Promo countdown timer

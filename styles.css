@@ -3,18 +3,20 @@
    ========================================================================== */
 
 :root {
-  --bg: #0f1115;
-  --bg-alt: #171a21;
-  --surface: #1c2029;
-  --surface-alt: #22262f;
-  --border: #2b303a;
-  --text: #f4f5f7;
-  --text-dim: #b7bcc7;
-  --text-faint: #7d838f;
-  --accent: #e0a527;
-  --accent-strong: #f4c04a;
-  --accent-text: #1a1305;
-  --success: #3fbf6f;
+  --bg: #0a0d10;
+  --bg-alt: #10151a;
+  --surface: #141a20;
+  --surface-alt: #1a2128;
+  --border: #253039;
+  --text: #f4f7f9;
+  --text-dim: #aebac3;
+  --text-faint: #71808c;
+  --accent: #4b9cd3;
+  --accent-strong: #7ec8e3;
+  --accent-text: #051019;
+  --teal: #1caa8c;
+  --teal-strong: #2fd6b0;
+  --success: #2fd6b0;
   --danger: #e5484d;
   --radius-sm: 10px;
   --radius-md: 16px;
@@ -200,8 +202,8 @@ textarea:focus-visible {
 }
 
 .button.ghost:hover {
-  border-color: var(--accent);
-  color: var(--accent-strong);
+  border-color: var(--teal);
+  color: var(--teal-strong);
 }
 
 /* ---------- Hero ---------- */
@@ -576,6 +578,57 @@ textarea:focus-visible {
   font-style: italic;
   max-width: 640px;
   margin: 0 auto;
+}
+
+/* ---------- Gallery ---------- */
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.gallery-item {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  aspect-ratio: 4 / 3;
+}
+
+.gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.25s ease;
+}
+
+.gallery-item:hover img {
+  transform: scale(1.04);
+}
+
+.gallery-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 14px 16px 12px;
+  background: linear-gradient(to top, rgba(0,0,0,0.75), transparent);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.gallery-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--text-faint);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: 40px 24px;
+  font-style: italic;
 }
 
 /* ---------- Booking ---------- */
