@@ -110,8 +110,8 @@ function initEstimator() {
 
   refresh();
 
-  // "Book Now" — carries the estimate into the form, marks it a booking request,
-  // then scrolls down and opens the Google Calendar booking page.
+  // "Book Now" — sends the estimate to Warren by email AND opens the Google Calendar
+  // booking page in a new tab so the customer can grab a time slot right away.
   const bookBtn = document.getElementById('estBookNowBtn');
   if (bookBtn) {
     bookBtn.addEventListener('click', () => {
@@ -119,9 +119,13 @@ function initEstimator() {
       applyEstimateToForm(est, 'Book Now');
       document.getElementById('quoteFormHeading').textContent = 'Confirm your details to book';
       document.getElementById('submitBtnLabel').textContent = 'Send Booking Request';
+
+      // Open the booking calendar right away in a new tab
+      window.open('https://calendar.app.google/R5X62DQGGWWicwbE6', '_blank', 'noopener');
+
+      // Scroll to the form and auto-submit the estimate so Warren gets it by email
       document.getElementById('quote').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      const nameInput = document.querySelector('#quoteForm input[name="name"]');
-      if (nameInput) setTimeout(() => nameInput.focus(), 400);
+      showBookingReminder();
     });
   }
 
@@ -138,6 +142,24 @@ function initEstimator() {
       if (nameInput) setTimeout(() => nameInput.focus(), 400);
     });
   }
+}
+
+// Shows a one-time reminder banner above the form after "Book Now" opens the calendar tab,
+// since the calendar itself can't be pre-filled with the estimate — the form fills that gap.
+function showBookingReminder() {
+  let reminderEl = document.getElementById('bookingReminderBanner');
+  if (!reminderEl) {
+    reminderEl = document.createElement('div');
+    reminderEl.id = 'bookingReminderBanner';
+    reminderEl.className = 'estimator-summary-banner booking-reminder';
+    document.getElementById('quoteForm').prepend(reminderEl);
+  }
+  reminderEl.innerHTML = `
+    <strong>Booking calendar opened in a new tab.</strong>
+    <span>Pick your time there, then finish this form so we receive your estimate details and can confirm your appointment.</span>
+  `;
+  const nameInput = document.querySelector('#quoteForm input[name="name"]');
+  if (nameInput) setTimeout(() => nameInput.focus(), 500);
 }
 
 function applyEstimateToForm(est, requestType) {
